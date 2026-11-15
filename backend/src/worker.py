@@ -8,6 +8,7 @@ from src.models import Job, Dataset, Report
 from src.services.business import analyze
 from src.services.reports import deliver
 from src.services.audit import record
+from src.services.handovers import visible
 logging.basicConfig(level=logging.INFO)
 def execute(job_id):
     with Session() as db:
@@ -30,7 +31,7 @@ def tick():
         queued=list(db.scalars(select(Job.id).where(Job.status=='queued').limit(3)))
     for job_id in queued:execute(job_id)
     with Session() as db:
-        for r in db.scalars(select(Report).where(Report.enabled==True,Report.next_run<=time.time())):
+        for r in db.scalars(select(Report).where(Report.enabled==True,Report.next_run<=time.time(),visible(Report))):
             d=deliver(db,r)
             if d:record(db,'worker','report.delivered',{'id':r.id,'delivery':d.id})
         db.commit()

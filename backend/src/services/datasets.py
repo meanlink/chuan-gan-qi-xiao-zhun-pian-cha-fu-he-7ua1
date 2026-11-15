@@ -7,7 +7,8 @@ import math, time
 def create(db, data):
     name=data.name.strip()
     if len(name)<2: raise HTTPException(422, '批次名称去除空格后至少需要两个字符')
-    if db.scalar(select(Dataset).where(Dataset.name==name)):
+    # 名称在库内全局唯一；未完成迁入的整组虽不可见，但同样占用名称，避免落库冲突。
+    if db.scalar(select(Dataset.id).where(Dataset.name==name)):
         raise HTTPException(409, '该数据批次名已存在，请修改名称')
     for index,row in enumerate(data.records):
         for c in metadata()['columns']:
